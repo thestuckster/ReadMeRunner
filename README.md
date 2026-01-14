@@ -8,6 +8,7 @@
 - 🔒 **Safety first** - Confirmation prompts for each block before execution
 - ✅ **Approval tracking** - Automatically remembers approved blocks using hash-based tracking
 - 🔑 **Variable support** - Use variables and prompts for dynamic command execution
+- 🌍 **Environment variables** - Load variables from `.env` files for configuration
 - 📝 **Multi-line commands** - Support for complex multi-line bash commands
 - 🎯 **Selective execution** - Only executes code within designated RR blocks, ignores everything else
 
@@ -84,11 +85,35 @@ rr run -t
 
 **Note:** When using `--trust`, blocks are executed immediately without confirmation prompts or hash tracking.
 
+#### `--env` / `-e`
+
+Specify a custom path to a `.env` file:
+
+```bash
+rr run --env /path/to/.env
+# or
+rr run -e /path/to/.env
+```
+
+**Note:** If `--env` is not provided, RR will automatically look for a `.env` file in the project directory (specified by `--path` or current directory).
+
 ## How It Works
 
 ### RR Blocks
 
 RR blocks are defined using HTML-style comments in your README file. Only content within `<!-- RR ... -->` blocks is executed. Everything else is completely ignored.
+
+### Environment Variables
+
+ReadMe Runner supports loading environment variables from `.env` files:
+
+- **Automatic discovery**: If no `--env` flag is provided, RR looks for `.env` in the project directory
+- **Custom path**: Use `--env` to specify a custom `.env` file location
+- **Standard format**: Supports standard `.env` file format (`KEY=VALUE`)
+- **Variable precedence**: Block variables override environment variables if names conflict
+- **Quoted values**: Supports both single and double-quoted values in `.env` files
+
+Environment variables are loaded before block execution and can be used in commands using the `#VARIABLE_NAME` syntax.
 
 ### Block Approval Tracking
 
@@ -163,6 +188,28 @@ npm install
 -->
 ```
 
+### Using Environment Variables
+
+Environment variables from `.env` files can be used in your commands:
+
+**`.env` file:**
+```
+APP_NAME=MyApp
+API_KEY=secret-key-123
+DEBUG=true
+```
+
+**RR Block:**
+```markdown
+<!-- RR[Config Test]
+    echo "App: #APP_NAME"
+    echo "API Key: #API_KEY"
+    echo "Debug mode: #DEBUG"
+-->
+```
+
+Variables from `.env` files are automatically loaded and can be referenced using `#VARIABLE_NAME` syntax. Block variables take precedence over environment variables if there's a name conflict.
+
 ## Syntax Reference
 
 For complete syntax documentation, including all available features and detailed examples, see [ReadmeRunerSyntax.md](./ReadmeRunerSyntax.md).
@@ -191,19 +238,22 @@ For complete syntax documentation, including all available features and detailed
 ```
 your-project/
 ├── README.md          # Your README with RR blocks
+├── .env               # Environment variables (optional)
 ├── .rr                # Approval tracking file (auto-generated)
 └── ...
 ```
 
-The `.rr` file is automatically created in your project directory when you first approve a block. It contains SHA256 hashes of approved blocks.
+- **`.env`**: Optional file containing environment variables in `KEY=VALUE` format. Automatically loaded if present in the project directory.
+- **`.rr`**: Automatically created in your project directory when you first approve a block. It contains SHA256 hashes of approved blocks.
 
 ## Best Practices
 
 1. **Name your blocks**: Named blocks are easier to identify in confirmation prompts
-2. **Use variables for secrets**: Use `#prompt()` for sensitive information like passwords
+2. **Use variables for secrets**: Use `#prompt()` for sensitive information like passwords, or store them in `.env` files (and add `.env` to `.gitignore`)
 3. **Keep blocks focused**: Each block should have a single, clear purpose
 4. **Review before approving**: Always review the commands before confirming execution
 5. **Version control `.rr`**: Consider adding `.rr` to your `.gitignore` if you want per-developer approval tracking
+6. **Environment variables**: Use `.env` files for configuration that varies between environments (development, staging, production)
 
 ## Troubleshooting
 

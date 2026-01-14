@@ -31,6 +31,8 @@ func init() {
 	runCmd.Flags().StringP("path", "p", "", "Full path to the project directory containing the README file")
 	// Add flag for auto-trusting blocks (skip prompts)
 	runCmd.Flags().BoolP("trust", "t", false, "Auto-trust all blocks and skip confirmation prompts")
+	// Add flag for .env file path
+	runCmd.Flags().StringP("env", "e", "", "Path to .env file (if not provided, looks for .env in project directory)")
 }
 
 // RRBlock represents a parsed ReadMe Runner block
@@ -44,7 +46,6 @@ func execute(cmd *cobra.Command, args []string) {
 	var workDir string
 	var err error
 
-	
 	//use provided path if set.
 	projectPath, _ := cmd.Flags().GetString("path")
 	if projectPath != "" {
@@ -83,7 +84,9 @@ func execute(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	
+	// Load environment variables from .env file
+	envVars := loadEnvVars(cmd, workDir)
+
 	trust, _ := cmd.Flags().GetBool("trust")
 
 	var approvedHashes map[string]bool
@@ -94,7 +97,7 @@ func execute(cmd *cobra.Command, args []string) {
 	for i, block := range blocks {
 		// If trust flag is set, skip all hash operations and execute directly
 		if trust {
-			if err := executeBlock(block); err != nil {
+			if err := executeBlock(block, envVars); err != nil {
 				fmt.Printf("Error executing block %s: %v\n", block.Name, err)
 				os.Exit(-1)
 			}
@@ -113,7 +116,7 @@ func execute(cmd *cobra.Command, args []string) {
 			saveBlockHash(workDir, blockHash)
 		}
 
-		if err := executeBlock(block); err != nil {
+		if err := executeBlock(block, envVars); err != nil {
 			fmt.Printf("Error executing block %s: %v\n", block.Name, err)
 			os.Exit(-1)
 		}
@@ -133,6 +136,80 @@ func findReadme(workDir string) (string, bool) {
 	}
 
 	return "", false
+}
+
+// findEnvFile finds the .env file in the specified directory or returns the provided path
+func findEnvFile(envPath string, workDir string) (string, bool) {
+	// If env path is provided, use it directly
+	if envPath != "" {
+		absPath, err := filepath.Abs(envPath)
+		if err != nil {
+			return "", false
+		}
+		if _, err := os.Stat(absPath); err == nil {
+			return absPath, true
+		}
+		return "", false
+	}
+
+	// Otherwise, look for .env in the work directory
+	envFilePath := filepath.Join(workDir, ".env")
+	if _, err := os.Stat(envFilePath); err == nil {
+		return envFilePath, true
+	}
+
+	return "", false
+}
+
+// loadEnvVars loads environment variables from .env file
+func loadEnvVars(cmd *cobra.Command, workDir string) map[string]string {
+	envVars := make(map[string]string)
+
+	// Get env flag value
+	envPath, _ := cmd.Flags().GetString("env")
+
+	// Find the .env file
+	envFilePath, exists := findEnvFile(envPath, workDir)
+	if !exists {
+		return envVars // Return empty map if no .env file found
+	}
+
+	// Read the .env file
+	content, err := os.ReadFile(envFilePath)
+	if err != nil {
+		// If we can't read it, just return empty map (non-fatal)
+		return envVars
+	}
+
+	// Parse the .env file
+	lines := strings.Split(string(content), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+
+		// Skip empty lines and comments
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		// Parse KEY=VALUE format
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) == 2 {
+			key := strings.TrimSpace(parts[0])
+			value := strings.TrimSpace(parts[1])
+
+			// Remove quotes if present
+			if len(value) >= 2 {
+				if (strings.HasPrefix(value, `"`) && strings.HasSuffix(value, `"`)) ||
+					(strings.HasPrefix(value, `'`) && strings.HasSuffix(value, `'`)) {
+					value = value[1 : len(value)-1]
+				}
+			}
+
+			envVars[key] = value
+		}
+	}
+
+	return envVars
 }
 
 // hashBlock creates a SHA256 hash of the block content
@@ -425,7 +502,7 @@ func promptForBlock(block RRBlock, blockNum, totalBlocks int) bool {
 }
 
 // executeBlock executes a single RR block
-func executeBlock(block RRBlock) error {
+func executeBlock(block RRBlock, envVars map[string]string) error {
 	// First, handle prompts and populate variables
 	reader := bufio.NewReader(os.Stdin)
 	for varName, varValue := range block.Variables {
@@ -444,7 +521,18 @@ func executeBlock(block RRBlock) error {
 	// Execute each command
 	for _, cmd := range block.Commands {
 		// Replace variable references in command
-		cmd = substituteVariables(cmd, block.Variables)
+		// Block variables take precedence over env variables
+		mergedVars := make(map[string]string)
+		// First add env variables
+		for k, v := range envVars {
+			mergedVars[k] = v
+		}
+		// Then add block variables (they override env variables)
+		for k, v := range block.Variables {
+			mergedVars[k] = v
+		}
+		// Substitute variables (block vars override env vars)
+		cmd = substituteVariables(cmd, mergedVars)
 
 		// Display block name or command for confirmation
 		if block.Name != "" {

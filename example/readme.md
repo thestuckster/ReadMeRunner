@@ -75,7 +75,20 @@ echo "Another ignored command"
 rm -rf /  # This dangerous command should be ignored since it's not in an RR block
 ```
 
+## Environment Variables Test
+
+<!-- RR[Env Variables Test]
+    echo "Testing .env file variables:"
+    echo "APP_NAME: #APP_NAME"
+    echo "APP_VERSION: #APP_VERSION"
+    echo "ENVIRONMENT: #ENVIRONMENT"
+    echo "DATABASE_URL: #DATABASE_URL"
+    echo "API_KEY: #API_KEY"
+    echo "DEBUG: #DEBUG"
+-->
+
 ## External tools
 <!-- RR[Docker Hello]
 docker run docker/whalesay cowsay Hello RR
 -->
+

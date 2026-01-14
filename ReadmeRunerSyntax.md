@@ -64,8 +64,74 @@ Variables can be used in your commands by using a `#` followed by your variable 
 -->
 ```
 
-**NOTE** as of right now, variables are scoped to only their respective RR Block. You cannot share variables between blocks.
-This is something we would like to add in the future.
+**NOTE** as of right now, variables are scoped to only their respective RR Block. To share variables between blocks
+you will have to take advantage of the .env file support mentioned below.
+
+# Environment Variables
+
+You can use environment variables from `.env` files in your RR blocks. This is useful for configuration values that you don't want to hardcode in your README file.
+
+## Creating a .env File
+
+Create a `.env` file in your project directory (or specify a custom path with the `--env` flag). The file uses standard `KEY=VALUE` format:
+
+**Example `.env` file:**
+```
+APP_NAME=MyApplication
+API_KEY=secret-key-12345
+DATABASE_URL=postgresql://localhost:5432/mydb
+DEBUG=true
+ENVIRONMENT=development
+```
+
+**Note:** 
+- Empty lines and lines starting with `#` are ignored (comments)
+- Values can be quoted with single or double quotes (quotes are automatically removed)
+- If no `--env` flag is provided, RR automatically looks for `.env` in the project directory
+
+## Using Environment Variables
+
+Environment variables can be referenced in your commands using the same `#VARIABLE_NAME` syntax as block variables.
+
+**Example:**
+```
+<!-- RR[Config Test]
+    echo "Application: #APP_NAME"
+    echo "API Key: #API_KEY"
+    echo "Database: #DATABASE_URL"
+    echo "Debug mode: #DEBUG"
+    echo "Environment: #ENVIRONMENT"
+-->
+```
+
+## Variable Precedence
+
+When a variable name exists in both a block variable and an environment variable, **block variables take precedence**. This means:
+
+1. Block variables (including prompts) override environment variables
+2. Environment variables are used if the variable doesn't exist in the block
+
+**Example:**
+```
+<!-- RR[Variable Precedence]
+    # APP_NAME exists in both .env and block
+    APP_NAME = "Block Value"  # This will be used
+    echo "App name: #APP_NAME"  # Outputs: "App name: Block Value"
+    
+    # API_KEY only exists in .env
+    echo "API Key: #API_KEY"  # Uses value from .env file
+-->
+```
+
+## Specifying a Custom .env File
+
+You can specify a custom path to a `.env` file using the `--env` flag:
+
+```bash
+rr run --env /path/to/custom/.env
+# or
+rr run -e /path/to/custom/.env
+```
 
 # Prompting for Input
 
