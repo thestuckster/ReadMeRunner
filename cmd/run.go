@@ -44,22 +44,21 @@ func execute(cmd *cobra.Command, args []string) {
 	var workDir string
 	var err error
 
-	// Check if path flag is provided
+	
+	//use provided path if set.
 	projectPath, _ := cmd.Flags().GetString("path")
 	if projectPath != "" {
-		// Use the provided path
 		workDir, err = filepath.Abs(projectPath)
 		if err != nil {
 			fmt.Printf("Error resolving project path: %v\n", err)
 			os.Exit(-1)
 		}
-		// Verify the path exists
+
 		if _, err := os.Stat(workDir); os.IsNotExist(err) {
 			fmt.Printf("Project path does not exist: %s\n", workDir)
 			os.Exit(-1)
 		}
 	} else {
-		// Use current directory
 		workDir, err = os.Getwd()
 		if err != nil {
 			panic(err)
@@ -84,10 +83,9 @@ func execute(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	// Check if trust flag is set
+	
 	trust, _ := cmd.Flags().GetBool("trust")
 
-	// Only load approved hashes if trust flag is not set
 	var approvedHashes map[string]bool
 	if !trust {
 		approvedHashes = loadApprovedHashes(workDir)
@@ -107,13 +105,11 @@ func execute(cmd *cobra.Command, args []string) {
 		blockHash := hashBlock(block)
 		isApproved := approvedHashes[blockHash]
 
-		// Skip prompt if block is already approved
 		if !isApproved {
 			if !promptForBlock(block, i+1, len(blocks)) {
 				fmt.Println("Skipping block...")
 				continue
 			}
-			// User approved, save the hash
 			saveBlockHash(workDir, blockHash)
 		}
 
@@ -126,8 +122,8 @@ func execute(cmd *cobra.Command, args []string) {
 
 func findReadme(workDir string) (string, bool) {
 	readmePaths := []string{
-		filepath.Join(workDir, "simple-example.md"),
 		filepath.Join(workDir, "readme.md"),
+		filepath.Join(workDir, "README.md"),
 	}
 
 	for _, path := range readmePaths {
@@ -137,11 +133,6 @@ func findReadme(workDir string) (string, bool) {
 	}
 
 	return "", false
-}
-
-func readMeExists(workDir string) bool {
-	_, exists := findReadme(workDir)
-	return exists
 }
 
 // hashBlock creates a SHA256 hash of the block content
@@ -183,19 +174,16 @@ func loadApprovedHashes(workDir string) map[string]bool {
 	rrFilePath := filepath.Join(workDir, ".rr")
 	approvedHashes := make(map[string]bool)
 
-	// Check if .rr file exists
 	if _, err := os.Stat(rrFilePath); os.IsNotExist(err) {
 		return approvedHashes
 	}
 
-	// Read the file
 	content, err := os.ReadFile(rrFilePath)
 	if err != nil {
-		// If we can't read it, just return empty map
+		//file doesn't exist or cant be read. just return empty map.
 		return approvedHashes
 	}
 
-	// Parse hashes (one per line)
 	lines := strings.Split(string(content), "\n")
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
@@ -211,23 +199,19 @@ func loadApprovedHashes(workDir string) map[string]bool {
 func saveBlockHash(workDir string, hash string) {
 	rrFilePath := filepath.Join(workDir, ".rr")
 
-	// Check if hash already exists
 	approvedHashes := loadApprovedHashes(workDir)
 	if approvedHashes[hash] {
-		return // Hash already saved
+		return
 	}
 
-	// Append hash to file
 	file, err := os.OpenFile(rrFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		// If we can't write, just continue (non-fatal)
+		//don't crash if we can't write to the file.
 		return
 	}
 	defer file.Close()
 
-	// Write hash on a new line
 	if _, err := file.WriteString(hash + "\n"); err != nil {
-		// Non-fatal error, just continue
 		return
 	}
 }
@@ -434,8 +418,7 @@ func promptForBlock(block RRBlock, blockNum, totalBlocks int) bool {
 		return false
 	}
 
-	// Print newline after user response to ensure next prompt appears on new line
-	fmt.Println()
+	fmt.Println() //ensure next prompt appears on new line
 
 	response := strings.TrimSpace(strings.ToLower(input))
 	return response == "y" || response == "yes"
@@ -465,9 +448,9 @@ func executeBlock(block RRBlock) error {
 
 		// Display block name or command for confirmation
 		if block.Name != "" {
-			fmt.Printf("\n[%s] Executing: %s\n", block.Name, cmd)
+			fmt.Printf("\n[%s]\nExecuting: %s\nOutput:\n", block.Name, cmd)
 		} else {
-			fmt.Printf("\nExecuting: %s\n", cmd)
+			fmt.Printf("\nExecuting: %s\nOutput:\n", cmd)
 		}
 
 		// Execute the command
