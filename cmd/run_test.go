@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/spf13/cobra"
 )
 
 func TestParseRRBlocks_BasicBlock(t *testing.T) {
@@ -90,7 +92,7 @@ echo "This should also be ignored"`
 func TestProcessBlockContent_Variables(t *testing.T) {
 	block := &RRBlock{
 		Name:      "Test",
-		Variables:  make(map[string]string),
+		Variables: make(map[string]string),
 		Commands:  []string{},
 	}
 
@@ -115,7 +117,7 @@ func TestProcessBlockContent_Variables(t *testing.T) {
 func TestProcessBlockContent_MultipleVariables(t *testing.T) {
 	block := &RRBlock{
 		Name:      "Test",
-		Variables:  make(map[string]string),
+		Variables: make(map[string]string),
 		Commands:  []string{},
 	}
 
@@ -138,7 +140,7 @@ func TestProcessBlockContent_MultipleVariables(t *testing.T) {
 func TestProcessBlockContent_Prompts(t *testing.T) {
 	block := &RRBlock{
 		Name:      "Test",
-		Variables:  make(map[string]string),
+		Variables: make(map[string]string),
 		Commands:  []string{},
 	}
 
@@ -158,7 +160,7 @@ func TestProcessBlockContent_Prompts(t *testing.T) {
 func TestProcessBlockContent_MultiLineCommands(t *testing.T) {
 	block := &RRBlock{
 		Name:      "Test",
-		Variables:  make(map[string]string),
+		Variables: make(map[string]string),
 		Commands:  []string{},
 	}
 
@@ -183,7 +185,7 @@ func TestProcessBlockContent_MultiLineCommands(t *testing.T) {
 func TestProcessBlockContent_MultipleCommands(t *testing.T) {
 	block := &RRBlock{
 		Name:      "Test",
-		Variables:  make(map[string]string),
+		Variables: make(map[string]string),
 		Commands:  []string{},
 	}
 
@@ -203,7 +205,7 @@ func TestProcessBlockContent_MultipleCommands(t *testing.T) {
 func TestProcessBlockContent_VariablesAndCommands(t *testing.T) {
 	block := &RRBlock{
 		Name:      "Test",
-		Variables:  make(map[string]string),
+		Variables: make(map[string]string),
 		Commands:  []string{},
 	}
 
@@ -256,15 +258,15 @@ func TestHashBlock_Consistency(t *testing.T) {
 
 func TestHashBlock_DifferentContent(t *testing.T) {
 	block1 := RRBlock{
-		Name:     "Test",
+		Name:      "Test",
 		Variables: map[string]string{"var": "value1"},
-		Commands: []string{"echo test"},
+		Commands:  []string{"echo test"},
 	}
 
 	block2 := RRBlock{
-		Name:     "Test",
+		Name:      "Test",
 		Variables: map[string]string{"var": "value2"},
-		Commands: []string{"echo test"},
+		Commands:  []string{"echo test"},
 	}
 
 	hash1 := hashBlock(block1)
@@ -277,15 +279,15 @@ func TestHashBlock_DifferentContent(t *testing.T) {
 
 func TestHashBlock_IncludesName(t *testing.T) {
 	block1 := RRBlock{
-		Name:     "Block1",
+		Name:      "Block1",
 		Variables: map[string]string{},
-		Commands: []string{"echo test"},
+		Commands:  []string{"echo test"},
 	}
 
 	block2 := RRBlock{
-		Name:     "Block2",
+		Name:      "Block2",
 		Variables: map[string]string{},
-		Commands: []string{"echo test"},
+		Commands:  []string{"echo test"},
 	}
 
 	hash1 := hashBlock(block1)
@@ -299,7 +301,7 @@ func TestHashBlock_IncludesName(t *testing.T) {
 func TestSubstituteVariables(t *testing.T) {
 	cmd := "echo #my-var and #another-var"
 	variables := map[string]string{
-		"my-var":     "value1",
+		"my-var":      "value1",
 		"another-var": "value2",
 	}
 
@@ -349,7 +351,7 @@ func TestLoadApprovedHashes_NonExistentFile(t *testing.T) {
 func TestLoadApprovedHashes_ExistingFile(t *testing.T) {
 	tempDir := t.TempDir()
 	rrFile := filepath.Join(tempDir, ".rr")
-	
+
 	content := "hash1\nhash2\nhash3\n"
 	err := os.WriteFile(rrFile, []byte(content), 0644)
 	if err != nil {
@@ -376,7 +378,7 @@ func TestLoadApprovedHashes_ExistingFile(t *testing.T) {
 func TestLoadApprovedHashes_EmptyFile(t *testing.T) {
 	tempDir := t.TempDir()
 	rrFile := filepath.Join(tempDir, ".rr")
-	
+
 	err := os.WriteFile(rrFile, []byte(""), 0644)
 	if err != nil {
 		t.Fatalf("Failed to create .rr file: %v", err)
@@ -446,7 +448,7 @@ func TestSaveBlockHash_MultipleHashes(t *testing.T) {
 func TestFindReadme_READMEExists(t *testing.T) {
 	tempDir := t.TempDir()
 	readmePath := filepath.Join(tempDir, "README.md")
-	
+
 	err := os.WriteFile(readmePath, []byte("# Test"), 0644)
 	if err != nil {
 		t.Fatalf("Failed to create README: %v", err)
@@ -466,7 +468,7 @@ func TestFindReadme_READMEExists(t *testing.T) {
 func TestFindReadme_ReadmeExists(t *testing.T) {
 	tempDir := t.TempDir()
 	readmePath := filepath.Join(tempDir, "readme.md")
-	
+
 	err := os.WriteFile(readmePath, []byte("# Test"), 0644)
 	if err != nil {
 		t.Fatalf("Failed to create readme: %v", err)
@@ -481,21 +483,30 @@ func TestFindReadme_ReadmeExists(t *testing.T) {
 	}
 }
 
-func TestFindReadme_SimpleExampleExists(t *testing.T) {
+func TestFindReadme_PriorityOrder(t *testing.T) {
 	tempDir := t.TempDir()
-	readmePath := filepath.Join(tempDir, "simple-example.md")
-	
+
+	// Create both readme.md and README.md
+	readmePath := filepath.Join(tempDir, "readme.md")
+	readmePathUpper := filepath.Join(tempDir, "README.md")
+
 	err := os.WriteFile(readmePath, []byte("# Test"), 0644)
 	if err != nil {
-		t.Fatalf("Failed to create simple-example: %v", err)
+		t.Fatalf("Failed to create readme: %v", err)
 	}
 
+	err = os.WriteFile(readmePathUpper, []byte("# Test"), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create README: %v", err)
+	}
+
+	// readme.md should be found first (priority order)
 	path, exists := findReadme(tempDir)
 	if !exists {
-		t.Fatal("Expected simple-example to be found")
+		t.Fatal("Expected readme to be found")
 	}
 	if path != readmePath {
-		t.Errorf("Expected path '%s', got '%s'", readmePath, path)
+		t.Errorf("Expected readme.md to be found first, got '%s'", path)
 	}
 }
 
@@ -577,7 +588,7 @@ echo "Test"
 func TestProcessBlockContent_EmptyLines(t *testing.T) {
 	block := &RRBlock{
 		Name:      "Test",
-		Variables:  make(map[string]string),
+		Variables: make(map[string]string),
 		Commands:  []string{},
 	}
 
@@ -737,7 +748,7 @@ rm -rf node_modules
 func TestProcessBlockContent_ComplexScenario(t *testing.T) {
 	block := &RRBlock{
 		Name:      "Complex",
-		Variables:  make(map[string]string),
+		Variables: make(map[string]string),
 		Commands:  []string{},
 	}
 
@@ -842,7 +853,7 @@ func TestHashBlock_WithPrompts(t *testing.T) {
 func TestLoadApprovedHashes_WithWhitespace(t *testing.T) {
 	tempDir := t.TempDir()
 	rrFile := filepath.Join(tempDir, ".rr")
-	
+
 	content := "hash1\n  hash2  \n\nhash3\n"
 	err := os.WriteFile(rrFile, []byte(content), 0644)
 	if err != nil {
@@ -919,7 +930,7 @@ rm -rf /  # This dangerous command should be ignored
 func TestProcessBlockContent_CommandWithVariables(t *testing.T) {
 	block := &RRBlock{
 		Name:      "Test",
-		Variables:  make(map[string]string),
+		Variables: make(map[string]string),
 		Commands:  []string{},
 	}
 
@@ -941,15 +952,15 @@ func TestProcessBlockContent_CommandWithVariables(t *testing.T) {
 
 func TestHashBlock_CommandOrderMatters(t *testing.T) {
 	block1 := RRBlock{
-		Name:     "Test",
+		Name:      "Test",
 		Variables: map[string]string{},
-		Commands: []string{"echo first", "echo second"},
+		Commands:  []string{"echo first", "echo second"},
 	}
 
 	block2 := RRBlock{
-		Name:     "Test",
+		Name:      "Test",
 		Variables: map[string]string{},
-		Commands: []string{"echo second", "echo first"},
+		Commands:  []string{"echo second", "echo first"},
 	}
 
 	hash1 := hashBlock(block1)
@@ -960,3 +971,283 @@ func TestHashBlock_CommandOrderMatters(t *testing.T) {
 	}
 }
 
+// Tests for .env file support
+
+func TestFindEnvFile_CustomPath(t *testing.T) {
+	tempDir := t.TempDir()
+	customEnvPath := filepath.Join(tempDir, "custom.env")
+
+	err := os.WriteFile(customEnvPath, []byte("TEST=value"), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create custom .env file: %v", err)
+	}
+
+	path, exists := findEnvFile(customEnvPath, tempDir)
+	if !exists {
+		t.Fatal("Expected custom .env file to be found")
+	}
+	if path != customEnvPath {
+		t.Errorf("Expected path '%s', got '%s'", customEnvPath, path)
+	}
+}
+
+func TestFindEnvFile_DefaultLocation(t *testing.T) {
+	tempDir := t.TempDir()
+	envPath := filepath.Join(tempDir, ".env")
+
+	err := os.WriteFile(envPath, []byte("TEST=value"), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create .env file: %v", err)
+	}
+
+	path, exists := findEnvFile("", tempDir)
+	if !exists {
+		t.Fatal("Expected .env file to be found in work directory")
+	}
+	if path != envPath {
+		t.Errorf("Expected path '%s', got '%s'", envPath, path)
+	}
+}
+
+func TestFindEnvFile_NotFound(t *testing.T) {
+	tempDir := t.TempDir()
+
+	_, exists := findEnvFile("", tempDir)
+	if exists {
+		t.Error("Expected .env file not to be found")
+	}
+}
+
+func TestLoadEnvVars_StandardFormat(t *testing.T) {
+	tempDir := t.TempDir()
+	envPath := filepath.Join(tempDir, ".env")
+
+	content := `APP_NAME=MyApp
+API_KEY=secret-123
+DEBUG=true
+DATABASE_URL=postgresql://localhost:5432/db`
+
+	err := os.WriteFile(envPath, []byte(content), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create .env file: %v", err)
+	}
+
+	cmd := &cobra.Command{}
+	cmd.Flags().AddFlag(runCmd.Flags().Lookup("env"))
+	cmd.SetArgs([]string{})
+
+	envVars := loadEnvVars(cmd, tempDir)
+
+	if len(envVars) != 4 {
+		t.Fatalf("Expected 4 environment variables, got %d", len(envVars))
+	}
+
+	if envVars["APP_NAME"] != "MyApp" {
+		t.Errorf("Expected APP_NAME to be 'MyApp', got '%s'", envVars["APP_NAME"])
+	}
+	if envVars["API_KEY"] != "secret-123" {
+		t.Errorf("Expected API_KEY to be 'secret-123', got '%s'", envVars["API_KEY"])
+	}
+	if envVars["DEBUG"] != "true" {
+		t.Errorf("Expected DEBUG to be 'true', got '%s'", envVars["DEBUG"])
+	}
+	if envVars["DATABASE_URL"] != "postgresql://localhost:5432/db" {
+		t.Errorf("Expected DATABASE_URL to be 'postgresql://localhost:5432/db', got '%s'", envVars["DATABASE_URL"])
+	}
+}
+
+func TestLoadEnvVars_WithQuotes(t *testing.T) {
+	tempDir := t.TempDir()
+	envPath := filepath.Join(tempDir, ".env")
+
+	content := `APP_NAME="My App"
+API_KEY='secret-key-123'
+MESSAGE="Hello World"`
+
+	err := os.WriteFile(envPath, []byte(content), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create .env file: %v", err)
+	}
+
+	cmd := &cobra.Command{}
+	cmd.Flags().AddFlag(runCmd.Flags().Lookup("env"))
+	cmd.SetArgs([]string{})
+
+	envVars := loadEnvVars(cmd, tempDir)
+
+	if envVars["APP_NAME"] != "My App" {
+		t.Errorf("Expected APP_NAME to be 'My App' (quotes removed), got '%s'", envVars["APP_NAME"])
+	}
+	if envVars["API_KEY"] != "secret-key-123" {
+		t.Errorf("Expected API_KEY to be 'secret-key-123' (quotes removed), got '%s'", envVars["API_KEY"])
+	}
+	if envVars["MESSAGE"] != "Hello World" {
+		t.Errorf("Expected MESSAGE to be 'Hello World' (quotes removed), got '%s'", envVars["MESSAGE"])
+	}
+}
+
+func TestLoadEnvVars_IgnoresComments(t *testing.T) {
+	tempDir := t.TempDir()
+	envPath := filepath.Join(tempDir, ".env")
+
+	content := `# This is a comment
+APP_NAME=MyApp
+# Another comment
+API_KEY=secret-123
+# Final comment`
+
+	err := os.WriteFile(envPath, []byte(content), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create .env file: %v", err)
+	}
+
+	cmd := &cobra.Command{}
+	cmd.Flags().AddFlag(runCmd.Flags().Lookup("env"))
+	cmd.SetArgs([]string{})
+
+	envVars := loadEnvVars(cmd, tempDir)
+
+	if len(envVars) != 2 {
+		t.Fatalf("Expected 2 environment variables (comments ignored), got %d", len(envVars))
+	}
+
+	if envVars["APP_NAME"] != "MyApp" {
+		t.Error("Expected APP_NAME to be parsed")
+	}
+	if envVars["API_KEY"] != "secret-123" {
+		t.Error("Expected API_KEY to be parsed")
+	}
+}
+
+func TestLoadEnvVars_IgnoresEmptyLines(t *testing.T) {
+	tempDir := t.TempDir()
+	envPath := filepath.Join(tempDir, ".env")
+
+	content := `APP_NAME=MyApp
+
+API_KEY=secret-123
+
+DEBUG=true`
+
+	err := os.WriteFile(envPath, []byte(content), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create .env file: %v", err)
+	}
+
+	cmd := &cobra.Command{}
+	cmd.Flags().AddFlag(runCmd.Flags().Lookup("env"))
+	cmd.SetArgs([]string{})
+
+	envVars := loadEnvVars(cmd, tempDir)
+
+	if len(envVars) != 3 {
+		t.Fatalf("Expected 3 environment variables (empty lines ignored), got %d", len(envVars))
+	}
+}
+
+func TestLoadEnvVars_WithCustomPath(t *testing.T) {
+	tempDir := t.TempDir()
+	customEnvPath := filepath.Join(tempDir, "custom.env")
+
+	content := `APP_NAME=MyApp
+API_KEY=secret-123`
+
+	err := os.WriteFile(customEnvPath, []byte(content), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create custom .env file: %v", err)
+	}
+
+	cmd := &cobra.Command{}
+	cmd.Flags().AddFlag(runCmd.Flags().Lookup("env"))
+	cmd.SetArgs([]string{"--env", customEnvPath})
+	cmd.ParseFlags([]string{"--env", customEnvPath})
+
+	envVars := loadEnvVars(cmd, tempDir)
+
+	if len(envVars) != 2 {
+		t.Fatalf("Expected 2 environment variables, got %d", len(envVars))
+	}
+
+	if envVars["APP_NAME"] != "MyApp" {
+		t.Error("Expected APP_NAME to be loaded from custom path")
+	}
+}
+
+func TestLoadEnvVars_NonExistentFile(t *testing.T) {
+	tempDir := t.TempDir()
+
+	cmd := &cobra.Command{}
+	cmd.Flags().AddFlag(runCmd.Flags().Lookup("env"))
+	cmd.SetArgs([]string{})
+
+	envVars := loadEnvVars(cmd, tempDir)
+
+	if len(envVars) != 0 {
+		t.Errorf("Expected empty map for non-existent .env file, got %d entries", len(envVars))
+	}
+}
+
+func TestSubstituteVariables_WithEnvVars(t *testing.T) {
+	cmd := "echo App: #APP_NAME, Key: #API_KEY"
+	variables := map[string]string{
+		"APP_NAME": "MyApp",
+		"API_KEY":  "secret-123",
+	}
+
+	result := substituteVariables(cmd, variables)
+	expected := "echo App: MyApp, Key: secret-123"
+
+	if result != expected {
+		t.Errorf("Expected '%s', got '%s'", expected, result)
+	}
+}
+
+func TestSubstituteVariables_EnvVarPrecedence(t *testing.T) {
+	// Test that block variables override env variables
+	cmd := "echo Value: #TEST_VAR"
+
+	// Simulate merged variables (env vars first, then block vars)
+	mergedVars := map[string]string{
+		"TEST_VAR": "block-value", // Block var should override env var
+	}
+
+	result := substituteVariables(cmd, mergedVars)
+	expected := "echo Value: block-value"
+
+	if result != expected {
+		t.Errorf("Expected block variable to be used, got '%s'", result)
+	}
+}
+
+func TestLoadEnvVars_WithSpaces(t *testing.T) {
+	tempDir := t.TempDir()
+	envPath := filepath.Join(tempDir, ".env")
+
+	// Write content with spaces around equals signs - test that spaces are trimmed
+	content := "APP_NAME = MyApp\nAPI_KEY= secret-123\nDEBUG =true\n"
+
+	err := os.WriteFile(envPath, []byte(content), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create .env file: %v", err)
+	}
+
+	// Create a fresh command for this test to avoid state issues
+	testCmd := &cobra.Command{}
+	testCmd.Flags().StringP("env", "e", "", "")
+
+	envVars := loadEnvVars(testCmd, tempDir)
+
+	if len(envVars) != 3 {
+		t.Fatalf("Expected 3 environment variables, got %d", len(envVars))
+	}
+
+	if envVars["APP_NAME"] != "MyApp" {
+		t.Errorf("Expected APP_NAME to be 'MyApp' (spaces trimmed), got '%s'", envVars["APP_NAME"])
+	}
+	if envVars["API_KEY"] != "secret-123" {
+		t.Errorf("Expected API_KEY to be 'secret-123' (spaces trimmed), got '%s'", envVars["API_KEY"])
+	}
+	if envVars["DEBUG"] != "true" {
+		t.Errorf("Expected DEBUG to be 'true' (spaces trimmed), got '%s'", envVars["DEBUG"])
+	}
+}
