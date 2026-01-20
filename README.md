@@ -16,13 +16,13 @@
 
 ### Using Go Install
 
-Install the latest version directly:
+Install the latest version as `rr` (recommended):
 
 ```bash
-go install github.com/thestuckster/readmerunner@latest
+go install github.com/thestuckster/readmerunner/cmd/rr@v1.0.0
 ```
 
-Or install a specific version:
+Or install as `readmerunner`:
 
 ```bash
 go install github.com/thestuckster/readmerunner@v1.0.0
