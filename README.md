@@ -14,6 +14,16 @@
 
 ## Installation
 
+### Using Go Install
+
+If the repository is available on a Go module path (e.g., GitHub), you can install directly:
+
+```bash
+go install https://github.com/thestuckster/readmerunner@latest
+```
+
+Replace `<repository-url>` with the full module path (e.g., `github.com/username/readmerunner`).
+
 ### From Source
 
 ```bash
