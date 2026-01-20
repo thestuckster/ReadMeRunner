@@ -16,13 +16,17 @@
 
 ### Using Go Install
 
-If the repository is available on a Go module path (e.g., GitHub), you can install directly:
+Install the latest version directly:
 
 ```bash
-go install https://github.com/thestuckster/readmerunner@latest
+go install github.com/thestuckster/readmerunner@latest
 ```
 
-Replace `<repository-url>` with the full module path (e.g., `github.com/username/readmerunner`).
+Or install a specific version:
+
+```bash
+go install github.com/thestuckster/readmerunner@v1.0.0
+```
 
 ### From Source
 
