@@ -17,7 +17,7 @@
 ### Using Go Install
 
 ```bash
-go install github.com/thestuckster/readmerunner@v1.0.0
+go install github.com/thestuckster/readmerunner@latest
 ```
 
 ### From Source
