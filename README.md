@@ -16,14 +16,6 @@
 
 ### Using Go Install
 
-Install the latest version as `rr` (recommended):
-
-```bash
-go install github.com/thestuckster/readmerunner/cmd/rr@v1.0.0
-```
-
-Or install as `readmerunner`:
-
 ```bash
 go install github.com/thestuckster/readmerunner@v1.0.0
 ```
@@ -51,7 +43,7 @@ echo "Hello from ReadMe Runner!"
 2. **Run the commands:**
 
 ```bash
-rr run
+readmerunner run
 ```
 
 3. **Confirm execution when prompted:**
@@ -70,7 +62,7 @@ Execute this block? (y/n): y
 ### Basic Command
 
 ```bash
-rr run
+readmerunner run
 ```
 
 Executes all RR blocks found in `README.md` or `readme.md` in the current directory.
@@ -82,9 +74,9 @@ Executes all RR blocks found in `README.md` or `readme.md` in the current direct
 Specify a custom project directory:
 
 ```bash
-rr run --path /path/to/project
+readmerunner run --path /path/to/project
 # or
-rr run -p /path/to/project
+readmerunner run -p /path/to/project
 ```
 
 #### `--trust` / `-t`
@@ -92,9 +84,9 @@ rr run -p /path/to/project
 Auto-execute all blocks without prompts (skips hash checking):
 
 ```bash
-rr run --trust
+readmerunner run --trust
 # or
-rr run -t
+readmerunner run -t
 ```
 
 **Note:** When using `--trust`, blocks are executed immediately without confirmation prompts or hash tracking.
@@ -104,9 +96,9 @@ rr run -t
 Specify a custom path to a `.env` file:
 
 ```bash
-rr run --env /path/to/.env
+readmerunner run --env /path/to/.env
 # or
-rr run -e /path/to/.env
+readmerunner run -e /path/to/.env
 ```
 
 **Note:** If `--env` is not provided, RR will automatically look for a `.env` file in the project directory (specified by `--path` or current directory).

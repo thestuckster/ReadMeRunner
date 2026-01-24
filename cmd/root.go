@@ -1,6 +1,3 @@
-/*
-Copyright © 2026 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
@@ -11,7 +8,7 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "rr",
+	Use:   "readmerunner",
 	Short: "Automatically execute instructions embedded in your readme file",
 	Long:  `ReadMe Runner automatically executes instructions embedded in your projects read me file. Get up and running!`,
 	// Uncomment the following line if your bare application

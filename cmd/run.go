@@ -27,11 +27,8 @@ var runCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(runCmd)
 
-	// Add flag for project path
 	runCmd.Flags().StringP("path", "p", "", "Full path to the project directory containing the README file")
-	// Add flag for auto-trusting blocks (skip prompts)
 	runCmd.Flags().BoolP("trust", "t", false, "Auto-trust all blocks and skip confirmation prompts")
-	// Add flag for .env file path
 	runCmd.Flags().StringP("env", "e", "", "Path to .env file (if not provided, looks for .env in project directory)")
 }
 
@@ -152,7 +149,6 @@ func findEnvFile(envPath string, workDir string) (string, bool) {
 		return "", false
 	}
 
-	// Otherwise, look for .env in the work directory
 	envFilePath := filepath.Join(workDir, ".env")
 	if _, err := os.Stat(envFilePath); err == nil {
 		return envFilePath, true
@@ -165,23 +161,19 @@ func findEnvFile(envPath string, workDir string) (string, bool) {
 func loadEnvVars(cmd *cobra.Command, workDir string) map[string]string {
 	envVars := make(map[string]string)
 
-	// Get env flag value
 	envPath, _ := cmd.Flags().GetString("env")
 
-	// Find the .env file
 	envFilePath, exists := findEnvFile(envPath, workDir)
 	if !exists {
 		return envVars // Return empty map if no .env file found
 	}
 
-	// Read the .env file
 	content, err := os.ReadFile(envFilePath)
 	if err != nil {
-		// If we can't read it, just return empty map (non-fatal)
+		// If we can't read the env file, return an empty map. 
 		return envVars
 	}
 
-	// Parse the .env file
 	lines := strings.Split(string(content), "\n")
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
@@ -197,7 +189,7 @@ func loadEnvVars(cmd *cobra.Command, workDir string) map[string]string {
 			key := strings.TrimSpace(parts[0])
 			value := strings.TrimSpace(parts[1])
 
-			// Remove quotes if present
+			// Remove quotes
 			if len(value) >= 2 {
 				if (strings.HasPrefix(value, `"`) && strings.HasSuffix(value, `"`)) ||
 					(strings.HasPrefix(value, `'`) && strings.HasSuffix(value, `'`)) {
@@ -215,16 +207,14 @@ func loadEnvVars(cmd *cobra.Command, workDir string) map[string]string {
 // hashBlock creates a SHA256 hash of the block content
 // The hash includes block name, commands, and variables to uniquely identify the block
 func hashBlock(block RRBlock) string {
-	// Create a string representation of the block
 	var content strings.Builder
 	content.WriteString("name:" + block.Name + "\n")
 
-	// Add variables in sorted order for consistency
 	var varKeys []string
 	for k := range block.Variables {
 		varKeys = append(varKeys, k)
 	}
-	// Simple sort for consistency
+
 	for i := 0; i < len(varKeys)-1; i++ {
 		for j := i + 1; j < len(varKeys); j++ {
 			if varKeys[i] > varKeys[j] {
@@ -236,12 +226,10 @@ func hashBlock(block RRBlock) string {
 		content.WriteString("var:" + k + "=" + block.Variables[k] + "\n")
 	}
 
-	// Add commands
 	for _, cmd := range block.Commands {
 		content.WriteString("cmd:" + cmd + "\n")
 	}
 
-	// Compute SHA256 hash
 	hash := sha256.Sum256([]byte(content.String()))
 	return hex.EncodeToString(hash[:])
 }
@@ -257,7 +245,7 @@ func loadApprovedHashes(workDir string) map[string]bool {
 
 	content, err := os.ReadFile(rrFilePath)
 	if err != nil {
-		//file doesn't exist or cant be read. just return empty map.
+		//don't crash if we can't read the file.
 		return approvedHashes
 	}
 
@@ -350,8 +338,6 @@ func parseRRBlocks(content string) []RRBlock {
 			continue
 		}
 
-		// Only collect lines that are inside an HTML comment block
-		// Lines outside blocks are completely ignored
 		if inBlock {
 			blockLines = append(blockLines, line)
 		}
@@ -372,7 +358,6 @@ func processBlockContent(block *RRBlock, lines []string) {
 	var currentCommand strings.Builder
 	var commands []string
 
-	// Regex patterns
 	varAssignRegex := regexp.MustCompile(`^\s*([a-zA-Z0-9_-]+)\s*=\s*"([^"]+)"\s*$`)
 	promptRegex := regexp.MustCompile(`^\s*([a-zA-Z0-9_-]+)\s*=\s*#prompt\("([^"]+)"\)\s*$`)
 
@@ -419,10 +404,8 @@ func processBlockContent(block *RRBlock, lines []string) {
 		// Handle multi-line commands (backslash continuation)
 		trimmedLine := strings.TrimRight(line, " \t")
 		if strings.HasSuffix(trimmedLine, "\\") {
-			// Remove the backslash and add the line
 			currentCommand.WriteString(strings.TrimSuffix(trimmedLine, "\\"))
-			// Continue to next line
-			continue
+			continue //next line
 		}
 
 		// Add the line to current command
@@ -452,7 +435,6 @@ func processBlockContent(block *RRBlock, lines []string) {
 func promptForBlock(block RRBlock, blockNum, totalBlocks int) bool {
 	reader := bufio.NewReader(os.Stdin)
 
-	// Display block information
 	fmt.Printf("\n--- Block %d of %d ---\n", blockNum, totalBlocks)
 	if block.Name != "" {
 		fmt.Printf("Block Name: %s\n", block.Name)
@@ -564,7 +546,6 @@ func substituteVariables(cmd string, variables map[string]string) string {
 		if value, exists := variables[varName]; exists {
 			return value
 		}
-		// If variable not found, return the original match
 		return match
 	})
 }
